@@ -1,0 +1,21 @@
+#peek-dalli
+  strong
+    span
+      a href="#" data-options="align:top" data-dropdown="cache-expiry"
+       ' Expire Cache Objects
+
+  ' cache:
+  strong
+    span data-defer-to="#{view.defer_key}-duration"  ...
+
+  '  hits:
+  strong
+    span data-defer-to="#{view.defer_key}-reads"  ...
+  '  misses:
+  strong
+    span data-defer-to="#{view.defer_key}-misses"  ...
+
+
+  ul id="cache-expiry" class="large content f-dropdown" data-dropdown-content=""
+    - view.cache_keys.each do |cache_key|
+      li= link_to cache_key, peek.expire_url(cache_key: URI.escape(cache_key)), remote: true, class: 'button', id: cache_key.parameterize

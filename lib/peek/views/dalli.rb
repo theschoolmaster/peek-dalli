@@ -11,6 +11,8 @@ module Peek
         @misses = Atomic.new(0)
         @writes = Atomic.new(0)
 
+        @keys = []
+
         setup_subscribers
       end
 
@@ -23,18 +25,18 @@ module Peek
         end
       end
 
-      def context
-        {
-          :reads => @reads.value,
-          :misses => @misses.value,
-          :writes => @writes.value
-        }
+      def cache_keys
+        @keys.uniq
       end
 
       def results
         {
           :duration => formatted_duration,
-          :calls => @calls.value
+          :calls => @calls.value,
+          :reads => @reads.value,
+          :misses => @misses.value,
+          :writes => @writes.value,
+          :keys => @keys.uniq.join(',')
         }
       end
 
@@ -49,14 +51,17 @@ module Peek
           @reads.value = 0
           @misses.value = 0
           @writes.value = 0
+
+          @keys = []
         end
 
-        subscribe('cache_read.active_support') do
-          @reads.update { |value| value + 1 }
-        end
-
-        subscribe('cache_miss.active_support') do
-          @misses.update { |value| value + 1 }
+        subscribe('cache_read.active_support') do |name, start, finish, id, payload|
+          if payload[:hit].blank?
+            @misses.update { |value| value + 1 }
+          else
+            @reads.update { |value| value + 1 }
+            @keys << payload[:key]
+          end
         end
 
         subscribe('cache_write.active_support') do
